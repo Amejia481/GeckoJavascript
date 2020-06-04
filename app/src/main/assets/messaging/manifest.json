@@ -3,15 +3,11 @@
   "name": "messaging",
   "version": "1.0",
   "description": "Example messaging web extension.",
-  "content_scripts": [
-    {
-      "matches": ["https://en.m.wikipedia.org/wiki/JavaScript"],
-      "js": ["custom.js"]
-    }
-  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
   "permissions": [
     "nativeMessaging",
-    "nativeMessagingFromContent",
     "geckoViewAddons"
   ],
   "browser_specific_settings": {
