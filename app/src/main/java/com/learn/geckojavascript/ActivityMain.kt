@@ -6,25 +6,16 @@ import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
-import org.json.JSONException
-import org.json.JSONObject
 import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.WebExtension
 
-/*
-* I need to run my javascript (assets/messaging/custom.js) on load of https://en.m.wikipedia.org/wiki/JavaScript URL.
-* I tried using web extensions but didn't succeed
-*
-*
-* */
 
 class ActivityMain : AppCompatActivity() {
     private lateinit var context: Context
     private lateinit var session: GeckoSession
     private var runtime: GeckoRuntime? = null
-    private var mPort: WebExtension.Port? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,14 +25,8 @@ class ActivityMain : AppCompatActivity() {
         session = GeckoSession()
         if (runtime == null) {
             runtime = GeckoRuntime.create(context)
-        }
+            runtime!!.settings.remoteDebuggingEnabled = true;
 
-        val extension = createWebExtension()
-        session.setMessageDelegate(extension,createMessageDelegate(),"browser")
-        val geckoResult = runtime?.registerWebExtension(extension)
-        geckoResult?.exceptionally {
-            Log.e("MessageDelegate", "Error registering WebExtension", it)
-            return@exceptionally geckoResult
         }
 
         val settings = session.settings
@@ -50,22 +35,29 @@ class ActivityMain : AppCompatActivity() {
         session.open(runtime!!)
 
         geckoView.setSession(session)
+
+        runtime!!.webExtensionController.installBuiltIn("resource://android/assets/messaging/")
+            .accept(
+                { extension -> setMessageDelegate(extension!!) },
+                { e -> Log.e("MessageDelegate", "Error registering WebExtension", e) })
+
+
         session.loadUri("https://en.m.wikipedia.org/wiki/JavaScript")
     }
 
-    private fun createMessageDelegate(): WebExtension.MessageDelegate{
-        return object : WebExtension.MessageDelegate{
-            override fun onMessage(message: Any, sender: WebExtension.MessageSender): GeckoResult<Any>? {
+
+    private fun setMessageDelegate(ext:WebExtension){
+        val delegate = object: WebExtension.MessageDelegate {
+            override fun onMessage(
+                nativeApp: String,
+                message: Any,
+                sender: WebExtension.MessageSender
+            ): GeckoResult<Any>? {
                 Log.d("MessageDelegate", message.toString())
                 return null
             }
         }
-    }
-    private fun createWebExtension(): WebExtension {
-        return WebExtension(
-            "resource://android/assets/messaging/",
-            "myextension@example.com",
-            WebExtension.Flags.ALLOW_CONTENT_MESSAGING)
+        session.webExtensionController.setMessageDelegate(ext, delegate, "browser")
     }
 
     private fun createProgressDelegate(): GeckoSession.ProgressDelegate {
@@ -73,16 +65,6 @@ class ActivityMain : AppCompatActivity() {
 
             override fun onPageStop(session: GeckoSession, success: Boolean) {
                 progressBar.visibility = View.GONE
-                if (mPort != null) {
-                    val message = JSONObject()
-                    try {
-                        message.put("value", "Testing Extension")
-                    } catch (ex: JSONException) {
-                        throw RuntimeException(ex);
-                    }
-
-                    mPort!!.postMessage(message);
-                }
             }
 
             override fun onSecurityChange(

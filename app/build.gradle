@@ -33,5 +33,5 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.core:core-ktx:1.0.2'
 
-    implementation "org.mozilla.geckoview:geckoview-nightly:71.0.20190905094317"
+    implementation "org.mozilla.geckoview:geckoview-nightly:78.0.20200526023857"
 }

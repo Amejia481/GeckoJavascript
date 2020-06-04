@@ -11,6 +11,12 @@
   ],
   "permissions": [
     "nativeMessaging",
+    "nativeMessagingFromContent",
     "geckoViewAddons"
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "messaging@example.com"
+    }
+  }
 }
